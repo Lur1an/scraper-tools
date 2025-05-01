@@ -4,7 +4,7 @@ Automatically converts to known formats for mainstream librarires and provides d
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import cycle
 from typing import Literal, override
@@ -61,7 +61,7 @@ class StaticProxy(Proxy):
         Creates a static proxy from a row in a standard proxy file.
         The format should be host:port:username:password
         """
-        match row.split(":"):
+        match row.strip().split(":"):
             case [host, port, username, password]:
                 return StaticProxy(
                     scheme=scheme,
@@ -120,6 +120,10 @@ class RotatingProxy(Proxy):
     An abstraction over a list of proxies which rotates through whilst implementing the `Proxy` interface.
     """
 
+    __slots__ = ("_proxies",)
+
+    _proxies: Iterator[StaticProxy]
+
     def __init__(self, proxies: Iterable[StaticProxy]):
         self._proxies = cycle(proxies).__iter__()
 
@@ -139,6 +143,7 @@ class RotatingProxy(Proxy):
 class ProxyFile(BaseSettings):
     """
     Configuration to read multiple proxies from a proxy file.
+    Defaults to `http` scheme and `proxies.txt` file.
 
     A proxy file is a text file that contains one proxy per line in the following format:
     host:port:username:password or host:port
@@ -151,8 +156,13 @@ class ProxyFile(BaseSettings):
         proxies = []
         with open(self.PROXY_FILE_PATH) as f:
             for line in f:
-                proxy = StaticProxy.from_proxy_row(line, self.PROXY_SCHEME)
-                proxies.append(proxy)
+                cleaned = line.strip()
+                if cleaned:
+                    proxies.append(
+                        StaticProxy.from_proxy_row(cleaned, self.PROXY_SCHEME)
+                    )
+        if not proxies:
+            raise ValueError("Proxy file is empty")
         return RotatingProxy(proxies)
 
 
@@ -180,17 +190,24 @@ class ProxyEnv(BaseSettings):
 def load_proxy_env() -> Proxy:
     """
     Loads a `Proxy` implementation from environment variables.
+    Prefers `ProxyFile` if configured, otherwise falls back to `ProxyEnv`.
     """
     try:
-        return ProxyFile().load()  # type: ignore
-    except ValidationError:
+        # Attempt to load ProxyFile first
+        proxy_file_config = ProxyFile()
+        return proxy_file_config.load()
+    except (ValidationError, FileNotFoundError):
+        # If ProxyFile config is invalid or file not found, try ProxyEnv
         pass
 
     try:
-        return ProxyEnv().proxy()  # type: ignore
+        # Attempt to load ProxyEnv
+        proxy_env_config = ProxyEnv()
+        return proxy_env_config.proxy()
     except ValidationError:
+        # If ProxyEnv config is also invalid, raise error
         pass
 
     raise Exception(
-        "No proxy settings found. Provide either variables for `ProxyEnv` or for `ProxyFile`"
+        "No valid proxy settings found. Provide either variables for `ProxyEnv` or for `ProxyFile`"
     )
