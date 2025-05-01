@@ -4,12 +4,12 @@ from datetime import timedelta
 from functools import wraps
 
 
-def timeout[**P, R](duration: timedelta):
+def timeout(duration: timedelta):
     """
     Adds a timeout to an async function
     """
 
-    def decorator(func: Callable[P, Awaitable[R]]):
+    def decorator[**P, R](func: Callable[P, Awaitable[R]]):
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             async with asyncio.timeout(duration.total_seconds()):
@@ -20,7 +20,7 @@ def timeout[**P, R](duration: timedelta):
     return decorator
 
 
-def retry[**P, R](
+def retry(
     attempts: int,
     delay: float = 0,
     timeout_duration: timedelta | None = None,
@@ -29,15 +29,15 @@ def retry[**P, R](
     Retries an async function a number of times with a delay between each attempt, with an optional timeout
     """
 
-    def decorator(func: Callable[P, Awaitable[R]]):
+    def decorator[**P, R](func: Callable[P, Awaitable[R]]):
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            attempt = 1
             while True:
-                attempt = 0
                 try:
                     return await func(*args, **kwargs)
                 except Exception as e:
-                    if attempt < attempts - 1:
+                    if attempt < attempts:
                         if delay:
                             await asyncio.sleep(delay)
                         attempt += 1

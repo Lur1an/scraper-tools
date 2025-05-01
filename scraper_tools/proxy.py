@@ -152,6 +152,9 @@ class ProxyFile(BaseSettings):
     PROXY_FILE_PATH: str
     PROXY_SCHEME: ProxyScheme = "http"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def load(self) -> "RotatingProxy":
         proxies = []
         with open(self.PROXY_FILE_PATH) as f:
@@ -176,6 +179,9 @@ class ProxyEnv(BaseSettings):
     PROXY_PORT: int
     PROXY_USERNAME: str | None
     PROXY_PASSWORD: str | None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def proxy(self) -> "StaticProxy":
         return StaticProxy(
