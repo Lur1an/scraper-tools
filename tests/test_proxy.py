@@ -44,7 +44,7 @@ def test_static_proxy_from_proxy_row():
 
 
 def test_proxy_env(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("PROXY_SERVER", "proxy.example.com")
+    monkeypatch.setenv("PROXY_HOST", "proxy.example.com")
     monkeypatch.setenv("PROXY_SCHEME", "http")
     monkeypatch.setenv("PROXY_PORT", "8080")
     monkeypatch.setenv("PROXY_USERNAME", "testuser")
@@ -130,7 +130,7 @@ def test_proxy_file_not_found(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_load_proxy_env_from_proxy_env(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("PROXY_SERVER", "env.proxy.com")
+    monkeypatch.setenv("PROXY_HOST", "env.proxy.com")
     monkeypatch.setenv("PROXY_SCHEME", "http")
     monkeypatch.setenv("PROXY_PORT", "8888")
     monkeypatch.setenv("PROXY_USERNAME", "envuser")

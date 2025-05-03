@@ -184,7 +184,7 @@ class ProxyEnv(BaseSettings):
     Configuration for a single static proxy
     """
 
-    PROXY_SERVER: str
+    PROXY_HOST: str
     PROXY_SCHEME: ProxyScheme
     PROXY_PORT: int
     PROXY_USERNAME: str | None
@@ -196,7 +196,7 @@ class ProxyEnv(BaseSettings):
     def proxy(self) -> "StaticProxy":
         return StaticProxy(
             scheme=self.PROXY_SCHEME,
-            host=self.PROXY_SERVER,
+            host=self.PROXY_HOST,
             port=self.PROXY_PORT,
             username=self.PROXY_USERNAME,
             password=self.PROXY_PASSWORD,
