@@ -158,11 +158,11 @@ def test_load_proxy_env_from_proxy_file(monkeypatch: pytest.MonkeyPatch):
         proxy = load_proxy_env()
 
     assert isinstance(proxy, RotatingProxy)
-    loaded_proxy = next(proxy._proxies)
+    loaded_proxy = next(proxy)
     assert loaded_proxy == expected_proxy
 
     # Check that the next proxy wraps around correctly
-    assert next(proxy._proxies) == expected_proxy
+    assert next(proxy) == expected_proxy
 
 
 def test_load_proxy_env_no_vars():

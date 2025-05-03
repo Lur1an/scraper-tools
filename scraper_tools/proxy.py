@@ -5,13 +5,12 @@ Automatically converts to known formats for mainstream librarires and provides d
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass
 from itertools import cycle
 from typing import Literal, override
 
 import httpx
 from playwright.async_api import ProxySettings as PlaywrightProxy
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from pydantic_core import Url
 from pydantic_settings import BaseSettings
 
@@ -43,8 +42,7 @@ class Proxy(ABC):
         raise NotImplementedError
 
 
-@dataclass(slots=True)
-class StaticProxy(Proxy):
+class StaticProxy(Proxy, BaseModel):
     """
     A proxy configured with a specific target.
     """
@@ -127,17 +125,29 @@ class RotatingProxy(Proxy):
     def __init__(self, proxies: Iterable[StaticProxy]):
         self._proxies = cycle(proxies).__iter__()
 
+    def __iter__(self) -> Iterator[StaticProxy]:
+        """
+        Returns an infinite iterator over the proxies in the rotation.
+        """
+        return self._proxies
+
+    def __next__(self) -> StaticProxy:
+        """
+        Returns the next proxy in the rotation.
+        """
+        return next(self._proxies)
+
     @override
     def playwright(self) -> PlaywrightProxy:
-        return next(self._proxies).playwright()
+        return next(self).playwright()
 
     @override
     def httpx(self) -> httpx.Proxy:
-        return next(self._proxies).httpx()
+        return next(self).httpx()
 
     @override
     def url(self) -> Url:
-        return next(self._proxies).url()
+        return next(self).url()
 
 
 class ProxyFile(BaseSettings):
