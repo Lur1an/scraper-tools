@@ -3,6 +3,7 @@ Provides abstractions around proxies, including manually rotating proxies.
 Automatically converts to known formats for mainstream librarires and provides defaults to read proxies both from files and environment variables.
 """
 
+import random
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from itertools import cycle
@@ -176,6 +177,7 @@ class ProxyFile(BaseSettings):
                     )
         if not proxies:
             raise ValueError("Proxy file is empty")
+        random.shuffle(proxies)
         return RotatingProxy(proxies)
 
 
