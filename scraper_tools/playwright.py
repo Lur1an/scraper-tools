@@ -22,7 +22,6 @@ ResourceType = Literal[
 ResourceRule = tuple[ResourceType, Callable[[Request], Awaitable[bool]]]
 
 LIGHT_BLOCK_PRESET: list[ResourceType] = [
-    "document",
     "stylesheet",
     "image",
     "media",
