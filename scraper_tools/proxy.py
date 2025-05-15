@@ -7,9 +7,8 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from itertools import cycle
-from typing import Literal, Unpack, override
+from typing import Literal, override
 
-import aiohttp
 import httpx
 from playwright.async_api import ProxySettings as PlaywrightProxy
 from pydantic import BaseModel, ValidationError
@@ -152,85 +151,6 @@ class RotatingProxy(Proxy):
         return next(self).url()
 
 
-class AIOProxyClient:
-    """
-    An HTTP client that routes requests through a configured Proxy.
-    It uses an aiohttp.ClientSession for making asynchronous HTTP requests.
-    """
-
-    __slots__ = ("_proxy", "_client")
-
-    _proxy: Proxy
-    _client: aiohttp.ClientSession
-
-    def __init__(self, proxy: Proxy, client: aiohttp.ClientSession):
-        """
-        Initializes the ProxyClient.
-
-        Args:
-            proxy: The Proxy instance (StaticProxy or RotatingProxy) to use for requests.
-            client_session: An initialized aiohttp.ClientSession to be used for making requests.
-        """
-        self._proxy = proxy
-        self._client = client
-
-    async def request(
-        self, method: str, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """
-        Makes an asynchronous HTTP request using the configured proxy and the underlying aiohttp.ClientSession.
-
-        Args:
-            method: HTTP method (e.g., 'GET', 'POST').
-            url: URL for the request.
-            **kwargs: Additional arguments to pass to aiohttp.ClientSession.request.
-
-        Returns:
-            An aiohttp.ClientResponse object.
-        """
-        proxy_url_obj = self._proxy.url()
-        proxy_url_str = proxy_url_obj.unicode_string()
-        kwargs["proxy"] = proxy_url_str
-
-        return await self._client.request(method, url, **kwargs)
-
-    async def get(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP GET request."""
-        return await self.request("GET", url, **kwargs)
-
-    async def post(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP POST request."""
-        return await self.request("POST", url, **kwargs)
-
-    async def put(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP PUT request."""
-        return await self.request("PUT", url, **kwargs)
-
-    async def delete(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP DELETE request."""
-        return await self.request("DELETE", url, **kwargs)
-
-    async def head(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP HEAD request."""
-        return await self.request("HEAD", url, **kwargs)
-
-    async def options(
-        self, url: str, **kwargs: Unpack[aiohttp.client._RequestOptions]
-    ) -> aiohttp.ClientResponse:
-        """Performs an HTTP OPTIONS request."""
-        return await self.request("OPTIONS", url, **kwargs)
-
-
 class ProxyFile(BaseSettings):
     """
     Configuration to read multiple proxies from a proxy file.
@@ -269,8 +189,8 @@ class ProxyEnv(BaseSettings):
     PROXY_HOST: str
     PROXY_SCHEME: ProxyScheme
     PROXY_PORT: int
-    PROXY_USERNAME: str | None
-    PROXY_PASSWORD: str | None
+    PROXY_USERNAME: str | None = None
+    PROXY_PASSWORD: str | None = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
