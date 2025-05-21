@@ -42,6 +42,13 @@ class Proxy(ABC):
         """
         raise NotImplementedError
 
+    @property
+    def url_str(self) -> str:
+        """
+        Returns a string representation of the proxy url.
+        """
+        return str(self.url())
+
 
 class StaticProxy(Proxy, BaseModel):
     """
@@ -166,7 +173,7 @@ class ProxyFile(BaseSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def load(self) -> "RotatingProxy":
+    def load(self) -> "list[StaticProxy]":
         proxies = []
         with open(self.PROXY_FILE_PATH) as f:
             for line in f:
@@ -177,8 +184,7 @@ class ProxyFile(BaseSettings):
                     )
         if not proxies:
             raise ValueError("Proxy file is empty")
-        random.shuffle(proxies)
-        return RotatingProxy(proxies)
+        return proxies
 
 
 class ProxyEnv(BaseSettings):
@@ -209,11 +215,15 @@ def load_proxy_env() -> Proxy:
     """
     Loads a `Proxy` implementation from environment variables.
     Prefers `ProxyFile` if configured, otherwise falls back to `ProxyEnv`.
+
+    When a `ProxyFile` is configured, it will load and turn all listed proxies into a `RotatingProxy`.
     """
     try:
         # Attempt to load ProxyFile first
         proxy_file_config = ProxyFile()
-        return proxy_file_config.load()
+        proxies = proxy_file_config.load()
+        random.shuffle(proxies)
+        return RotatingProxy(proxies)
     except (ValidationError, FileNotFoundError):
         # If ProxyFile config is invalid or file not found, try ProxyEnv
         pass
